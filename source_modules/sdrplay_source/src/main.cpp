@@ -307,6 +307,7 @@ public:
         sampleRate = samplerates.value(0);
         bandwidthId = 8;
         lnaGain = lnaSteps - 1;
+        ppm = 0.0f;
         gain = 59;
         agc = false;
         agcAttack = 500;
@@ -351,6 +352,9 @@ public:
         }
         if (config.conf["devices"][selectedName].contains("lnaGain")) {
             lnaGain = config.conf["devices"][selectedName]["lnaGain"];
+        }
+        if (config.conf["devices"][selectedName].contains("ppm")) {
+            ppm = config.conf["devices"][selectedName]["ppm"];
         }
         if (config.conf["devices"][selectedName].contains("ifGain")) {
             gain = config.conf["devices"][selectedName]["ifGain"];
@@ -575,6 +579,10 @@ private:
             sdrplay_api_Update(_this->openDev.dev, _this->openDev.tuner, sdrplay_api_Update_None, sdrplay_api_Update_RspDx_AntennaControl);
         }
 
+        // Device parameters
+        _this->openDevParams->devParams->ppm = (double)_this->ppm;
+        sdrplay_api_Update(_this->openDev.dev, _this->openDev.tuner, sdrplay_api_Update_Dev_Ppm, sdrplay_api_Update_Ext1_None);        
+
         // General options
         if (_this->ifModeId == 0) {
             _this->bandwidth = (_this->bandwidthId == 8) ? preferedBandwidth[_this->srId] : _this->bandwidths[_this->bandwidthId];
@@ -738,6 +746,18 @@ private:
         }
 
         if (_this->running) { SmGui::EndDisabled(); }
+
+        SmGui::LeftLabel("PPM");
+        SmGui::FillWidth();
+        if (SmGui::InputFloat(CONCAT("##sdrplay_ppm", _this->name), &_this->ppm, 0.01f, 0.1f)) {
+            if (_this->running) {
+                _this->openDevParams->devParams->ppm = (double)_this->ppm;
+                sdrplay_api_Update(_this->openDev.dev, _this->openDev.tuner, sdrplay_api_Update_Dev_Ppm, sdrplay_api_Update_Ext1_None);
+            }
+            config.acquire();
+            config.conf["devices"][_this->selectedName]["ppm"] = _this->ppm;
+            config.release(true);
+        }
 
         if (_this->selectedName != "") {
             SmGui::LeftLabel("LNA Gain");
@@ -1137,6 +1157,8 @@ private:
     int lnaGain = 9;
     int gain = 59;
     int lnaSteps = 9;
+
+    float ppm;
 
     bool agc = false;
     bool agcParamEdit = false;
