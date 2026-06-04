@@ -41,6 +41,7 @@ namespace SmGui {
         DRAW_STEP_POP_STYLE_COLOR,
         DRAW_STEP_PUSH_STYLE_COLOR,
         DRAW_STEP_COLLAPSING_HEADER,
+        DRAW_STEP_INPUT_FLOAT
     };
 
     enum DrawListElemType {
@@ -137,6 +138,7 @@ namespace SmGui {
     bool SliderInt(const char *label, int *v, int v_min, int v_max, FormatString format = FMT_STR_INT_DEFAULT, ImGuiSliderFlags flags = 0);
     bool SliderFloatWithSteps(const char *label, float *v, float v_min, float v_max, float v_step, FormatString display_format = FMT_STR_FLOAT_THREE_DECIMAL);
     bool InputInt(const char *label, int *v, int step = 1, int step_fast = 100, ImGuiInputTextFlags flags = 0);
+    bool InputFloat(const char *label, float *v, float step = 1.0f, float step_fast = 100.0f, const char * format = "%.3f", ImGuiInputTextFlags flags = 0);
     bool Checkbox(const char *label, bool *v);
     bool SliderFloat(const char *label, float *v, float v_min, float v_max, FormatString format = FMT_STR_FLOAT_THREE_DECIMAL, ImGuiSliderFlags flags = 0);
     bool InputText(const char *label, char *buf, size_t buf_size, ImGuiInputTextFlags flags = 0);
