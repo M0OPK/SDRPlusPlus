@@ -649,8 +649,8 @@ namespace SmGui {
             rdl->pushInt(flags);
             forceSyncForNext = false;
         }
-        if (diffId == label && diffValue.type == DRAW_LIST_ELEM_TYPE_INT) {
-            *v = diffValue.i;
+        if (diffId == label && diffValue.type == DRAW_LIST_ELEM_TYPE_FLOAT) {
+            *v = diffValue.f;
             return true;
         }
         return false;
