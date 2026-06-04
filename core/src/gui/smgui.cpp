@@ -1,4 +1,5 @@
 #include "smgui.h"
+#include "imgui.h"
 #include "style.h"
 #include <gui/widgets/stepped_slider.h>
 #include <gui/gui.h>
@@ -121,6 +122,12 @@ namespace SmGui {
                     SET_DIFF_INT(elements[i].str, elements[i+1].i);
                 }
                 i += 5;
+            }
+            else if (elem.step == DRAW_STEP_INPUT_FLOAT) {
+                if (InputFloat(elements[i].str.c_str(), &elements[i+1].f, elements[i+2].f, elements[i+3].f, elements[i+4].str.c_str(), elements[i+5].i)) {
+                    SET_DIFF_FLOAT(elements[i].str, elements[i+1].f);
+                }
+                i += 6;
             }
             else if (elem.step == DRAW_STEP_CHECKBOX) {
                 if (Checkbox(elements[i].str.c_str(), &elements[i+1].b)) {
@@ -449,6 +456,8 @@ namespace SmGui {
             E_VALIDATE_WIDGET(1, DRAW_STEP_TABLE_SET_COLUMN_INDEX, DRAW_LIST_ELEM_TYPE_INT)
 
             E_VALIDATE_WIDGET(1, DRAW_STEP_SET_NEXT_ITEM_WIDTH, DRAW_LIST_ELEM_TYPE_FLOAT)
+            E_VALIDATE_WIDGET(6, DRAW_STEP_INPUT_FLOAT, DRAW_LIST_ELEM_TYPE_STRING, DRAW_LIST_ELEM_TYPE_FLOAT, DRAW_LIST_ELEM_TYPE_FLOAT,
+                                                        DRAW_LIST_ELEM_TYPE_FLOAT, DRAW_LIST_ELEM_TYPE_STRING, DRAW_LIST_ELEM_TYPE_INT)
         }
 
         return true;
@@ -617,6 +626,26 @@ namespace SmGui {
             rdl->pushInt(*v);
             rdl->pushInt(step);
             rdl->pushInt(step_fast);
+            rdl->pushInt(flags);
+            forceSyncForNext = false;
+        }
+        if (diffId == label && diffValue.type == DRAW_LIST_ELEM_TYPE_INT) {
+            *v = diffValue.i;
+            return true;
+        }
+        return false;
+    }
+
+    bool InputFloat(const char *label, float *v, float step, float step_fast, const char * format, ImGuiInputTextFlags flags) {
+        nextItemFillWidth = false;
+        if (!serverMode) { return ImGui::InputFloat(label, v, step, step_fast, format, flags); }
+        if (rdl) {
+            rdl->pushStep(DRAW_STEP_INPUT_FLOAT, forceSyncForNext);
+            rdl->pushString(label);
+            rdl->pushFloat(*v);
+            rdl->pushFloat(step);
+            rdl->pushFloat(step_fast);
+            rdl->pushString(format);
             rdl->pushInt(flags);
             forceSyncForNext = false;
         }
