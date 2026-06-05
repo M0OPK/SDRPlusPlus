@@ -18,6 +18,7 @@
 #include "radio_interface.h"
 #include "demod.h"
 #include "radio_module_interface.h"
+#include "utils/event.h"
 
 extern ConfigManager config;
 
@@ -30,6 +31,7 @@ extern std::map<IFNRPreset, double> ifnrTaps;
 
 class RadioModule : public ModuleManager::Instance, public RadioModuleInterface  {
 public:
+    Event<DemodID> onModeChanged;
 
 
     RadioModule(std::string name) : RadioModuleInterface() {
@@ -295,6 +297,7 @@ public:
         config.conf[name]["selectedDemodId"] = id;
         config.release(true);
         auto endTime = std::chrono::high_resolution_clock::now();
+        onModeChanged.emit(id);
         flog::warn("Demod switch took {0} us", (int64_t)((std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime)).count()));
         return true;
     }

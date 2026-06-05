@@ -86,7 +86,7 @@ void SourceManager::tune(double freq) {
         return;
     }
     // TODO: No need to always retune the hardware in Panadapter mode
-    selectedHandler->tuneHandler(abs(((tuneMode == TuningMode::NORMAL) ? freq : ifFreq) + tuneOffset), selectedHandler->ctx);
+    selectedHandler->tuneHandler(abs(((tuneMode == TuningMode::NORMAL) ? freq : ifFreq + panAdapterTuneOffset) + tuneOffset), selectedHandler->ctx);
     onRetune.emit(freq);
     currentFreq = freq;
     onTuneChanged.emit(freq);
@@ -100,10 +100,25 @@ void SourceManager::setTuningOffset(double offset) {
 
 void SourceManager::setTuningMode(TuningMode mode) {
     tuneMode = mode;
+    if (tuneMode != TuningMode::PANADAPTER)
+    {
+        panAdapterTuneOffset = 0.0l;
+    }
     tune(currentFreq);
 }
 
 void SourceManager::setPanadapterIF(double freq) {
     ifFreq = freq;
     tune(currentFreq);
+}
+
+void SourceManager::setPanadapterOffset(double offset) {
+    if (tuneMode == TuningMode::PANADAPTER)
+    {
+        if (panAdapterTuneOffset != offset)
+        {
+            panAdapterTuneOffset = offset;
+            tune(currentFreq);
+        }
+    }
 }

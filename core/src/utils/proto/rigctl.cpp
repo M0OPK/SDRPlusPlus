@@ -26,7 +26,83 @@ namespace net::rigctl {
         return setFloat("F", freq);
     }
 
-    // TODO: get/setMode
+    int Client::setMode(Mode mode)
+    {
+        std::string mode_str = "";
+        switch(mode)
+        {
+            case Mode::MODE_USB:
+                mode_str = "USB";
+                break;
+            case Mode::MODE_LSB:
+                mode_str = "LSB";
+                break;
+            case Mode::MODE_CW:
+                mode_str = "CW";
+                break;
+            case Mode::MODE_CWR:
+                mode_str = "CWR";
+                break;
+            case Mode::MODE_RTTY:
+                mode_str = "RTTY";
+                break;
+            case Mode::MODE_RTTYR:
+                mode_str = "RTTYR";
+                break;
+            case Mode::MODE_AM:
+                mode_str = "AM";
+                break;
+            case Mode::MODE_FM:
+                mode_str = "FM";
+                break;
+            case Mode::MODE_WFM:
+                mode_str = "WFM";
+                break;
+            case Mode::MODE_AMS:
+                mode_str = "AMS";
+                break;
+            case Mode::MODE_PKTLSB:
+                mode_str = "PKTLSB";
+                break;
+            case Mode::MODE_PKTUSB:
+                mode_str = "PKTUSB";
+                break;
+            case Mode::MODE_PKTFM:
+                mode_str = "PKTFM";
+                break;
+            case Mode::MODE_ECSSUSB:
+                mode_str = "ECCSUSB";
+                break;
+            case Mode::MODE_ECSSLSB:
+                mode_str = "ECSSLSB";
+                break;
+            case Mode::MODE_FA:
+                mode_str = "FA";
+                break;
+            case Mode::MODE_SAM:
+                mode_str = "SAM";
+                break;
+            case Mode::MODE_SAL:
+                mode_str = "SAL";
+                break;
+            case Mode::MODE_SAH:
+                mode_str = "SAH";
+                break;
+            case Mode::MODE_DSB:
+                mode_str = "DSB";
+                break;
+            default:
+                return -1;
+        }
+
+        // Send direct since there's two parameters
+        char buf[128];
+        snprintf(buf, sizeof buf, "%s %s %d\n", "M", mode_str.c_str(), 0);
+        sock->sendstr(buf);
+
+        // Receive status
+        return recvStatus();
+    }
 
     // TODO: get/setVFO
 
@@ -218,8 +294,12 @@ namespace net::rigctl {
     }
 
     int Client::setString(std::string cmd, std::string value) {
-        // TODO
-        return -1;
+        char buf[128];
+        snprintf(buf, sizeof buf, "%s %s\n", cmd.c_str(), value.c_str());
+        sock->sendstr(buf);
+
+        // Receive status
+        return recvStatus();
     }
 
     std::shared_ptr<Client> connect(std::string host, int port) {

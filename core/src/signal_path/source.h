@@ -36,6 +36,7 @@ public:
     void setTuningOffset(double offset);
     void setTuningMode(TuningMode mode);
     void setPanadapterIF(double freq);
+    void setPanadapterOffset(double offset);
     const std::string& getSelectedName() const { return selectedName; }
 
     std::vector<std::string> getSourceNames();
@@ -55,6 +56,7 @@ private:
     std::string selectedName;
     SourceHandler* selectedHandler = NULL;
     double tuneOffset;
+    double panAdapterTuneOffset;
     double currentFreq;
     double ifFreq = 0.0;
     TuningMode tuneMode = TuningMode::NORMAL;
