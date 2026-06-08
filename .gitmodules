@@ -1,0 +1,3 @@
+[submodule "misc_modules/icom_civ_client/lib/async_comm"]
+	path = misc_modules/icom_civ_client/lib/async_comm
+	url = https://github.com/bgeiser/async_comm.git

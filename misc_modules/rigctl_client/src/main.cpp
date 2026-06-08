@@ -1,4 +1,8 @@
+#include "gui/tuner.h"
 #include "utils/event.h"
+#include "utils/flog.h"
+#include <cassert>
+#include <mutex>
 #include <utils/proto/rigctl.h>
 #include <imgui.h>
 #include <module.h>
@@ -43,6 +47,13 @@ public:
         }
         if (config.conf[name].contains("ifFreq")) {
             ifFreq = config.conf[name]["ifFreq"];
+        }
+
+        if (config.conf[name].contains("sync_twoway")) {
+            sync_twoway = config.conf[name]["sync_twoway"];
+        }
+        if (config.conf[name].contains("twoway_polltime")) {
+            twoway_polltime = config.conf[name]["twoway_polltime"];
         }
 
         if (config.conf[name].contains("fm_offset")) {
@@ -93,6 +104,7 @@ public:
     }
 
     void start() {
+        flog::info("TWOWAY: Starting worker");
         std::lock_guard<std::recursive_mutex> lck(mtx);
         if (running) { return; }
 
@@ -119,6 +131,11 @@ public:
         }
 
         running = true;
+
+        if (sync_twoway && twoway_polltime > 100)
+        {
+            workerThread = std::thread(&RigctlClientModule::worker, this);
+        }
     }
 
     void stop() {
@@ -136,13 +153,96 @@ public:
         // Disconnect from rigctl server
         client->close();
 
+        if (twoway_running)
+        {
+            twoway_stop = true;
+            if (workerThread.joinable())
+                workerThread.join();
+
+            assert(twoway_running == false && twoway_start == false && twoway_stop == false);
+        }
+
         running = false;
+    }
+
+    void worker()
+    {
+        flog::info("TWOWAY: Worker started");
+        std::lock_guard<std::recursive_mutex> lck(workerMtx);
+        if (twoway_running)
+            return;
+        twoway_running = true;
+        twoway_start = false;
+
+        for (;;)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(twoway_polltime));
+            if (twoway_stop)
+                break;
+            //flog::info("TWOWAY: Getting frequency");
+            double freq = client->getFreq();
+            //flog::info("TWOWAY: Got frequency {0}}", freq);
+            net::rigctl::Mode mode = client->getMode();
+            //flog::info("TWOWAY: Got mode");
+            if (freq != lastFreq && freq > 0.0l)
+            {
+                twoway_suppressEvents = true;
+                flog::info("Tuning to {0}", freq);
+                //sigpath::sourceManager.tune(freq);
+                tuner::tune(tuner::TUNER_MODE_CENTER, gui::waterfall.selectedVFO, freq);
+                lastFreq = freq;
+                twoway_suppressEvents = false;
+            }
+            if (mode != lastMode)
+            {
+                DemodID id = DemodID::RADIO_DEMOD_AM;
+                switch (mode)
+                {
+                    case net::rigctl::MODE_AM:
+                        id = RADIO_DEMOD_AM;
+                        break;
+                    case net::rigctl::MODE_FM:
+                        id = RADIO_DEMOD_NFM;
+                        break;
+                    case net::rigctl::MODE_CW:
+                        id = RADIO_DEMOD_CW;
+                        break;
+                    case net::rigctl::MODE_LSB:
+                        id = RADIO_DEMOD_LSB;
+                        break;
+                    case net::rigctl::MODE_USB:
+                        id = RADIO_DEMOD_USB;
+                        break;
+                    case net::rigctl::MODE_WFM:
+                        id = RADIO_DEMOD_WFM;
+                        break;
+                    case net::rigctl::MODE_DSB:
+                        id = RADIO_DEMOD_DSB;
+                        break;
+                    default:
+                        continue;
+                }
+
+                twoway_suppressEvents = true;
+                if (RadioModule * radioMod = (RadioModule *)core::moduleManager.getInterface("", "RadioModule"))
+                {
+                    radioMod->selectDemodByID(id);
+                }
+                twoway_suppressEvents = false;
+                lastMode = mode;
+            }
+        }
+        twoway_running = false;
+        twoway_stop = false;
     }
 
     int setMode(net::rigctl::Mode mode)
     {
         double mode_offset = 0.0l;
-        int result = this->client->setMode(mode);
+        int result = 0;
+        if (!twoway_suppressEvents)
+            result = this->client->setMode(mode);
+
         if (!result)
         {
             switch (mode)
@@ -163,6 +263,7 @@ public:
                     mode_offset = this->usb_offset;
                     break;
                 default:
+                    mode_offset = 0.0l;
                     break;
             }
 
@@ -203,11 +304,42 @@ private:
         }
 
         ImGui::FillWidth();
-        if (_this->running && ImGui::Button(CONCAT("Stop##_rigctl_cli_stop_", _this->name), ImVec2(menuWidth, 0))) {
-            _this->stop();
+        if (ImGui::Checkbox(CONCAT("Two Way Sync##_rigctl_sync_twoway_", _this->name), &_this->sync_twoway))
+        {
+            config.acquire();
+            config.conf[_this->name]["sync_twoway"] = _this->sync_twoway;
+            config.release(true);
+
+            // Start/stop worker
+            if (_this->sync_twoway && !_this->twoway_running)
+            {
+                _this->workerThread = std::thread(&RigctlClientModule::worker, _this);
+            }
+            else if (!_this->sync_twoway && _this->twoway_running && _this->workerThread.joinable())
+            {
+                _this->twoway_stop = true;
+                _this->workerThread.join();
+                assert(_this->twoway_running == false && _this->twoway_start == false && _this->twoway_start == false);
+            }
         }
-        else if (!_this->running && ImGui::Button(CONCAT("Start##_rigctl_cli_stop_", _this->name), ImVec2(menuWidth, 0))) {
-            _this->start();
+
+        ImGui::LeftLabel("Poll interval");
+        //ImGui::FillWidth();
+        ImGui::SetNextItemWidth(115);
+        if (_this->sync_twoway)
+        {
+            if (ImGui::InputInt(CONCAT("ms##_rigctl_twoway_poll_time_", _this->name), &_this->twoway_polltime))
+            {
+                config.acquire();
+                config.conf[_this->name]["twoway_polltime"] = _this->twoway_polltime;
+                config.release(true);
+            }
+        }
+        else
+        {
+            style::beginDisabled();
+            ImGui::InputInt(CONCAT("ms##rigctl_twoway_poll_time_", _this->name), &_this->twoway_polltime);
+            style::endDisabled();
         }
 
         if (_this->offset_param_edit) {
@@ -242,6 +374,14 @@ private:
             _this->_usb_offset = _this->usb_offset;
         }
 
+        ImGui::FillWidth();
+        if (_this->running && ImGui::Button(CONCAT("Stop##_rigctl_cli_stop_", _this->name), ImVec2(menuWidth, 0))) {
+            _this->stop();
+        }
+        else if (!_this->running && ImGui::Button(CONCAT("Start##_rigctl_cli_stop_", _this->name), ImVec2(menuWidth, 0))) {
+            _this->start();
+        }
+
         ImGui::TextUnformatted("Status:");
         ImGui::SameLine();
         if (_this->client && _this->client->isOpen() && _this->running) {
@@ -265,7 +405,7 @@ private:
                 ImGui::TableSetColumnIndex(0);
                 ImGui::LeftLabel("FM");
                 ImGui::TableSetColumnIndex(1);
-                ImGui::SetNextItemWidth(100);
+                ImGui::SetNextItemWidth(120);
                 ImGui::InputInt("hz##rigctl_offset_fm", &_fm_offset);
                 _fm_offset = std::clamp<int>(_fm_offset, -10000, 10000);
 
@@ -273,7 +413,7 @@ private:
                 ImGui::TableSetColumnIndex(0);
                 ImGui::LeftLabel("AM");
                 ImGui::TableSetColumnIndex(1);
-                ImGui::SetNextItemWidth(100);
+                ImGui::SetNextItemWidth(120);
                 ImGui::InputInt("hz##rigctl_offset_am", &_am_offset);
                 _am_offset = std::clamp<int>(_am_offset, -10000, 10000);
 
@@ -281,7 +421,7 @@ private:
                 ImGui::TableSetColumnIndex(0);
                 ImGui::LeftLabel("CW");
                 ImGui::TableSetColumnIndex(1);
-                ImGui::SetNextItemWidth(100);
+                ImGui::SetNextItemWidth(120);
                 ImGui::InputInt("hz##rigctl_offset_cw", &_cw_offset);
                 _cw_offset = std::clamp<int>(_cw_offset, -10000, 10000);
 
@@ -289,7 +429,7 @@ private:
                 ImGui::TableSetColumnIndex(0);
                 ImGui::LeftLabel("LSB");
                 ImGui::TableSetColumnIndex(1);
-                ImGui::SetNextItemWidth(100);
+                ImGui::SetNextItemWidth(120);
                 ImGui::InputInt("hz##rigctl_offset_lsb", &_lsb_offset);
                 _lsb_offset = std::clamp<int>(_lsb_offset, -10000, 10000);
 
@@ -297,7 +437,7 @@ private:
                 ImGui::TableSetColumnIndex(0);
                 ImGui::LeftLabel("USB");
                 ImGui::TableSetColumnIndex(1);
-                ImGui::SetNextItemWidth(100);
+                ImGui::SetNextItemWidth(120);
                 ImGui::InputInt("hz##rigctl_offset_usb", &_usb_offset);
                 _usb_offset = std::clamp<int>(_usb_offset, -10000, 10000);
 
@@ -321,6 +461,7 @@ private:
 
     static void retuneHandler(double freq, void* ctx) {
         RigctlClientModule* _this = (RigctlClientModule*)ctx;
+        if (_this->twoway_suppressEvents) { return; }
         if (!_this->client || !_this->client->isOpen()) { return; }
         if (_this->client->setFreq(freq)) {
             flog::error("Could not set frequency");
@@ -375,7 +516,18 @@ private:
 
     double ifFreq = 8830000.0;
 
-    int offset_param_edit = false;
+    bool sync_twoway = false;
+    int twoway_polltime = 500;
+    bool twoway_start = false;
+    bool twoway_stop = false;
+    bool twoway_running = false;
+    bool twoway_suppressEvents = false;
+    net::rigctl::Mode lastMode = net::rigctl::MODE_INVALID;
+    double lastFreq = 0.0l;
+    std::thread workerThread;
+    std::recursive_mutex workerMtx;
+
+    bool offset_param_edit = false;
     int fm_offset = 0;
     int am_offset = 0;
     int cw_offset = 0;

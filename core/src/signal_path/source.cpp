@@ -1,3 +1,4 @@
+#include <mutex>
 #include <server.h>
 #include <signal_path/source.h>
 #include <utils/flog.h>
@@ -90,7 +91,6 @@ void SourceManager::tune(double freq) {
     onRetune.emit(freq);
     currentFreq = freq;
     onTuneChanged.emit(freq);
-
 }
 
 void SourceManager::setTuningOffset(double offset) {

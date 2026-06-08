@@ -272,7 +272,9 @@ namespace net::rigctl {
         double getFloat(std::string cmd);
         int setFloat(std::string cmd, double value);
         std::string getString(std::string cmd);
+        std::vector<std::string> getStrings(std::string cmd, int lines);
         int setString(std::string cmd, std::string value);
+        bool isStringError(std::string response);
 
         std::shared_ptr<Socket> sock;
 

@@ -1,5 +1,8 @@
 #include "rigctl.h"
+#include "utils/flog.h"
 #include <math.h>
+#include <stdexcept>
+#include <vector>
 
 namespace net::rigctl {
     Client::Client(std::shared_ptr<Socket> sock) {
@@ -24,6 +27,34 @@ namespace net::rigctl {
 
     int Client::setFreq(double freq) {
         return setFloat("F", freq);
+    }
+
+    Mode Client::getMode()
+    {
+         std::vector<std::string> response = getStrings("m", 2);
+         std::string mode = response[0];
+
+        if (mode == "USB") return Mode::MODE_USB;
+        if (mode == "LSB") return Mode::MODE_LSB;
+        if (mode == "CW") return Mode::MODE_CW;
+        if (mode == "CWR") return Mode::MODE_CWR;
+        if (mode == "RTTY") return Mode::MODE_RTTY;
+        if (mode == "RTTYR") return Mode::MODE_RTTYR;
+        if (mode == "AM") return Mode::MODE_AM;
+        if (mode == "FM") return Mode::MODE_FM;
+        if (mode == "WFM") return Mode::MODE_WFM;
+        if (mode == "AMS") return Mode::MODE_AMS;
+        if (mode == "PKTLSB") return Mode::MODE_PKTLSB;
+        if (mode == "PKTUSB") return Mode::MODE_PKTUSB;
+        if (mode == "PKTFM") return Mode::MODE_PKTFM;
+        if (mode == "ECCSUSB") return Mode::MODE_ECSSUSB;
+        if (mode == "ECSSLSB") return Mode::MODE_ECSSLSB;
+        if (mode == "FA") return Mode::MODE_FA;
+        if (mode == "SAM") return Mode::MODE_SAM;
+        if (mode == "SAL") return Mode::MODE_SAL;
+        if (mode == "SAH") return Mode::MODE_SAH;
+        if (mode == "DSB") return Mode::MODE_DSB;
+        return Mode::MODE_INVALID;
     }
 
     int Client::setMode(Mode mode)
@@ -252,7 +283,14 @@ namespace net::rigctl {
         if (err != 1) { return -1; }
 
         // Decode frequency
-        return std::stoi(args[0]); 
+        try
+        {
+            return std::stoi(args[0]);
+        }
+        catch(std::invalid_argument)
+        {
+            return -1;
+        }
     }
     
     int Client::setInt(std::string cmd, int value) {
@@ -275,7 +313,14 @@ namespace net::rigctl {
         if (err != 1) { return -1; }
 
         // Decode frequency
-        return std::stod(args[0]);
+        try
+        {
+            return std::stod(args[0]);
+        }
+        catch(std::invalid_argument)
+        {
+            return -1;
+        }
     }
 
     int Client::setFloat(std::string cmd, double value) {
@@ -289,8 +334,36 @@ namespace net::rigctl {
     }
 
     std::string Client::getString(std::string cmd) {
-        // TODO
-        return "";
+        // Send command
+        sock->sendstr(cmd + "\n");
+
+        // Read line
+        std::vector<std::string> args;
+        int err = recvLine(sock, args);
+        if (err != 1) { return "\a"; }
+
+        // Decode frequency
+        return args[0];
+    }
+
+    std::vector<std::string> Client::getStrings(std::string cmd, int lines) {
+        std::vector<std::string> response;
+        // Send command
+        sock->sendstr(cmd + "\n");
+
+        // Read lines
+        for (int i = 0; i < lines ; i++)
+        {
+            std::vector<std::string> args;
+            int err = recvLine(sock, args);
+            if (err != 1) { return response; }
+            response.push_back(args[0]);
+        }
+        return response;
+    }
+
+    bool Client::isStringError(std::string response) {
+        return (response == "\a");
     }
 
     int Client::setString(std::string cmd, std::string value) {

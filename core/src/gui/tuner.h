@@ -1,4 +1,5 @@
 #pragma once
+#include <mutex>
 #include <string>
 #include <module.h>
 
@@ -17,5 +18,4 @@ namespace tuner {
     };
 
     void tune(int mode, std::string vfoName, double freq);
-
 }

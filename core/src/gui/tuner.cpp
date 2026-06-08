@@ -1,12 +1,14 @@
+#include <mutex>
 #include <signal_path/signal_path.h>
 #include <gui/gui.h>
 #include <gui/tuner.h>
 #include <string>
 
 namespace tuner {
-
+    std::recursive_mutex tuneMtx;
 
     void centerTuning(std::string vfoName, double freq) {
+        std::lock_guard<std::recursive_mutex> lck(tuneMtx);
         if (vfoName != "") {
             if (gui::waterfall.vfos.find(vfoName) == gui::waterfall.vfos.end()) { return; }
             sigpath::vfoManager.setOffset(vfoName, 0);
@@ -21,6 +23,7 @@ namespace tuner {
     }
 
     void normalTuning(std::string vfoName, double freq) {
+        std::lock_guard<std::recursive_mutex> lck(tuneMtx);
         // If no VFO name is provided, use centerTuning instead
         if (vfoName == "") {
             centerTuning(vfoName, freq);
@@ -143,12 +146,14 @@ namespace tuner {
     }    
 
     void iqTuning(double freq) {
+        std::lock_guard<std::recursive_mutex> lck(tuneMtx);
         gui::waterfall.setCenterFrequency(freq);
         gui::waterfall.centerFreqMoved = true;
         sigpath::sourceManager.tune(freq);
     }
 
     void tune(int mode, std::string vfoName, double freq) {
+        std::lock_guard<std::recursive_mutex> lck(tuneMtx);
         if (vfoName == "_current") {
             vfoName = gui::waterfall.selectedVFO;
         }

@@ -19,6 +19,7 @@
 #include "demod.h"
 #include "radio_module_interface.h"
 #include "utils/event.h"
+#include <mutex>
 
 extern ConfigManager config;
 
@@ -283,6 +284,7 @@ public:
     }
 
     bool selectDemodByID(DemodID id) override {
+        std::lock_guard<std::recursive_mutex> lck(modeMtx);
         auto startTime = std::chrono::high_resolution_clock::now();
         demod::Demodulator* demod = instantiateDemod(id);
         if (!demod) {
@@ -885,5 +887,7 @@ private:
     bool enabled = true;
 
     EventHandler<bool> txHandler;
+
+    std::recursive_mutex modeMtx;
 };
 

@@ -87,6 +87,7 @@ option(OPT_BUILD_TCI_SERVER "TCI backend for controlling SDR++ with sunsdr and s
 option(OPT_BUILD_SCANNER "Frequency scanner" ON)
 option(OPT_BUILD_SCHEDULER "Build the scheduler" OFF)
 option(OPT_BUILD_NOISE_REDUCTION_LOGMMSE "Build LOGMMSE noise reduction" ON)
+option(OPT_BUILD_ICOM_CIV_CLIENT "Build Icom CIV client for two way sync with ICOM radios using Transceive mode" OFF)
 
 # Other options
 option(USE_INTERNAL_LIBCORRECT "Use an internal version of libcorrect" ON)
@@ -431,6 +432,11 @@ endif (OPT_BUILD_SCHEDULER)
 if (OPT_BUILD_NOISE_REDUCTION_LOGMMSE)
 add_subdirectory("misc_modules/noise_reduction_logmmse")
 endif (OPT_BUILD_NOISE_REDUCTION_LOGMMSE)
+
+if (OPT_BUILD_ICOM_CIV_CLIENT)
+add_subdirectory("misc_modules/icom_civ_client")
+endif (OPT_BUILD_ICOM_CIV_CLIENT)
+
 
 set(SDRPP_SOURCES "src/main.cpp")
 

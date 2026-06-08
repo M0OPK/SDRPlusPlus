@@ -5,6 +5,7 @@
 #include <dsp/stream.h>
 #include <dsp/types.h>
 #include <utils/event.h>
+#include <mutex>
 
 class SourceManager {
 public:

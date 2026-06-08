@@ -640,6 +640,11 @@ private:
 
     static void tune(double freq, void* ctx) {
         SDRPlaySourceModule* _this = (SDRPlaySourceModule*)ctx;
+
+        // Don't tune hardware if no change
+        if (freq == _this->freq)
+            return;
+
         if (_this->running) {
             _this->channelParams->tunerParams.rfFreq.rfHz = freq;
             sdrplay_api_Update(_this->openDev.dev, _this->openDev.tuner, sdrplay_api_Update_Tuner_Frf, sdrplay_api_Update_Ext1_None);
