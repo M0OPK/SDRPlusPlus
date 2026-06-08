@@ -484,6 +484,33 @@ private:
 
             // If the menu was closed and (TODO) valid, update options
             if (!_this->offset_param_edit && valid) {
+                bool currentOffsetChanged = false;
+                switch (_this->lastMode) {
+                    case MODE_AM:
+                        if (_this->am_offset != _this->_am_offset)
+                            currentOffsetChanged = true;
+                        break;
+                    case MODE_CW:
+                    case MODE_CWR:
+                        if (_this->cw_offset != _this->_cw_offset)
+                            currentOffsetChanged = true;
+                        break;
+                    case MODE_FM:
+                        if (_this->fm_offset != _this->_fm_offset)
+                            currentOffsetChanged = true;
+                        break;
+                    case MODE_LSB:
+                        if (_this->lsb_offset != _this->_lsb_offset)
+                            currentOffsetChanged = true;
+                        break;
+                    case MODE_USB:
+                        if (_this->usb_offset != _this->_usb_offset)
+                            currentOffsetChanged = true;
+                        break;
+                    default:
+                        break;
+                }
+
                 _this->am_offset = _this->_am_offset;
                 _this->fm_offset = _this->_fm_offset;
                 _this->cw_offset = _this->_cw_offset;
@@ -497,6 +524,10 @@ private:
                 config.conf[_this->name]["lsb_offset"] = _this->lsb_offset;
                 config.conf[_this->name]["usb_offset"] = _this->usb_offset;
                 config.release(true);
+
+                // If we changed the offset of the current mode, update the live offset
+                if (currentOffsetChanged)
+                    _this->setModeOffset(_this->lastMode);
             }
         }
 
