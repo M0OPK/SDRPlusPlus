@@ -1,4 +1,4 @@
 [submodule "misc_modules/icom_civ_client/lib/async_comm"]
 	path = misc_modules/icom_civ_client/lib/async_comm
-	url = m0opk-github:M0OPK/async_comm.git
+	url = https://github.com/M0OPK/async_comm.git
 	branch = static-lib
