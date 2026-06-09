@@ -102,9 +102,69 @@
             "end": 4995000
         },
         {
-            "name": "60m Ham Band",
+            "name": "60m Ham Band CW",
             "type": "amateur",
             "start": 5258500,
+            "end": 5264000
+        },
+        {
+            "name": "60m Ham Band SSB/EMCOMM",
+            "type": "amateur",
+            "start": 5276000,
+            "end": 5284000
+        },
+        {
+            "name": "60m Ham Band Beacons",
+            "type": "amateur",
+            "start": 5288500,
+            "end": 5292000
+        },
+        {
+            "name": "60m Ham Band SSB",
+            "type": "amateur",
+            "start": 5298000,
+            "end": 5307000
+        },
+        {
+            "name": "60m Ham Band AM/SSB",
+            "type": "amateur",
+            "start": 5313000,
+            "end": 5323000
+        },
+        {
+            "name": "60m Ham Band SSB",
+            "type": "amateur",
+            "start": 5333000,
+            "end": 5338000
+        },
+        {
+            "name": "60m Ham Band WRC-15",
+            "type": "amateur",
+            "start": 5354000,
+            "end": 5358000
+        },
+        {
+            "name": "60m Ham Band WRC-15/WSPR",
+            "type": "amateur",
+            "start": 5362000,
+            "end": 5374500
+        },
+        {
+            "name": "60m Ham Band SSB",
+            "type": "amateur",
+            "start": 5378000,
+            "end": 5382000
+        },
+        {
+            "name": "60m Ham Band SSB",
+            "type": "amateur",
+            "start": 5395000,
+            "end": 5401500
+        },
+        {
+            "name": "60m Ham Band SSB",
+            "type": "amateur",
+            "start": 5403500,
             "end": 5406500
         },
         {
