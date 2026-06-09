@@ -159,7 +159,8 @@ public:
         {
             radioMod->onModeChanged.bindHandler(&_modChangeHandler);
             DemodID modId = (DemodID)radioMod->getSelectedDemodId();
-            icom_setmode(modId);
+            IcomMode mode = icom_setmode(modId);
+            setModeOffset(mode);
         }
 
         running = true;
@@ -172,6 +173,7 @@ public:
         // Switch source back to normal mode
         sigpath::sourceManager.onRetune.unbindHandler(&_retuneHandler);
         sigpath::sourceManager.setTuningMode(SourceManager::TuningMode::NORMAL);
+        sigpath::sourceManager.setTuningOffset(0.0l);
         if (RadioModule * radioMod = (RadioModule *)core::moduleManager.getInterface("", "RadioModule"))
         {
             radioMod->onModeChanged.unbindHandler(&_modChangeHandler);
@@ -217,14 +219,32 @@ public:
         return true;
     }
 
-    bool icom_setmode(DemodID mode)
+    IcomMode icom_setmode(DemodID mode)
     {
         if (serial == nullptr)
         {
             flog::error("Serial port not available");
-            return false;
+            return MODE_INVALID;
         }
 
+        IcomMode icom_mode = getIcomMode(mode);
+
+        if (icom_mode == MODE_INVALID)
+            return MODE_INVALID;
+
+        if (icom_mode == lastMode)
+            return icom_mode;
+
+        // Construct/send mode change command
+        uint8_t command[7] = { 0xfe, 0xfe, civ_address, CIV_CONTROLLER_ADDRESS, 0x01, (uint8_t)icom_mode, 0xfd };
+        serial->send_bytes(command, 7);
+        lastMode = icom_mode;
+        this->setModeOffset(icom_mode);
+        return icom_mode;
+    }
+
+    IcomMode getIcomMode(DemodID mode)
+    {
         IcomMode icom_mode = MODE_INVALID;
         switch (mode) 
         {
@@ -250,19 +270,7 @@ public:
                 icom_mode = MODE_INVALID;
                 break;
         }
-
-        if (icom_mode == MODE_INVALID)
-            return false;
-
-        if (icom_mode == lastMode)
-            return true;
-
-        // Construct/send mode change command
-        uint8_t command[7] = { 0xfe, 0xfe, civ_address, CIV_CONTROLLER_ADDRESS, 0x01, (uint8_t)icom_mode, 0xfd };
-        serial->send_bytes(command, 7);
-        lastMode = icom_mode;
-        this->setModeOffset(icom_mode);
-        return true;
+        return icom_mode;
     }
 
     void civ_callback(const uint8_t* buf, size_t len)
@@ -456,9 +464,20 @@ private:
         if (ImGui::Checkbox(CONCAT("##_icomciv_use_if_freq_", _this->name), &_this->useIfTuning)) {
             if (_this->running) {
                 if (_this->useIfTuning)
+                {
                     sigpath::sourceManager.setTuningMode(SourceManager::TuningMode::PANADAPTER);
+                    if (RadioModule * radioMod = (RadioModule *)core::moduleManager.getInterface("", "RadioModule"))
+                    {
+                        IcomMode mode = _this->getIcomMode((DemodID)radioMod->getSelectedDemodId());
+                        _this->setModeOffset(mode);
+                    }
+
+                }
                 else
+                {
                     sigpath::sourceManager.setTuningMode(SourceManager::TuningMode::NORMAL);
+                    sigpath::sourceManager.setTuningOffset(0.0l);
+                }
             }
             config.acquire();
             config.conf[_this->name]["useIfTuning"] = _this->useIfTuning;
