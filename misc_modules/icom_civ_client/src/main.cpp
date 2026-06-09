@@ -1,3 +1,4 @@
+#include <async_comm/serial.h>
 #include "gui/tuner.h"
 #include "signal_path/source.h"
 #include "utils/event.h"
@@ -18,7 +19,6 @@
 #include <core.h>
 #include <config.h>
 #include <radio_module.h>
-#include <async_comm/serial.h>
 #include <string>
 #include <vector>
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
@@ -80,7 +80,6 @@ public:
         }
         if (config.conf[name].contains("civ_address")) {
             civ_address = config.conf[name]["civ_address"];
-            sprintf(civ_address_txt, "%02X", civ_address);
         }
         if (config.conf[name].contains("fm_offset")) {
             fm_offset = config.conf[name]["fm_offset"];
@@ -97,6 +96,9 @@ public:
         if (config.conf[name].contains("usb_offset")) {
             usb_offset = config.conf[name]["usb_offset"];
         }
+
+        // Always copy civ address to the text field. Even if it is the default
+        sprintf(civ_address_txt, "%02X", civ_address);
 
         config.release();
 
