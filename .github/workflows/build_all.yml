@@ -3,10 +3,10 @@ name: Build Binaries
 on:
     push:
         branches:
-        - master
+        - brown-panadapter
     pull_request:
         branches:
-        - master
+        - brown-panadapter
 
 env:
     # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
