@@ -3,15 +3,15 @@ name: Build Binaries
 on:
     push:
         branches:
-        - master
+        - brown-panadapter
     pull_request:
         branches:
-        - master
+        - brown-panadapter
 
 env:
     # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
     BUILD_TYPE: Release
-    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
 jobs:
 
@@ -20,6 +20,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Build Environment
           run: cmake -E make_directory ${{runner.workspace}}/build
@@ -66,7 +68,7 @@ jobs:
           run: mkdir "C:/Program Files/codec2" ; mkdir "C:/Program Files/codec2/include" ; mkdir "C:/Program Files/codec2/include/codec2" ; mkdir "C:/Program Files/codec2/lib" ; cd "codec2" ; xcopy "src" "C:/Program Files/codec2/include" ; cd "build" ; xcopy "src" "C:/Program Files/codec2/lib" ; xcopy "codec2" "C:/Program Files/codec2/include/codec2"
 
         - name: Install vcpkg dependencies
-          run: vcpkg install fftw3:x64-windows glfw3:x64-windows portaudio:x64-windows zstd:x64-windows libusb:x64-windows itpp:x64-windows spdlog:x64-windows
+          run: vcpkg install fftw3:x64-windows glfw3:x64-windows portaudio:x64-windows zstd:x64-windows libusb:x64-windows itpp:x64-windows spdlog:x64-windows boost-asio boost-bind boost-function
 
         - name: Install rtaudio
           run: git clone https://github.com/thestk/rtaudio ; cd rtaudio ; git checkout 2f2fca4502d506abc50f6d4473b2836d24cfb1e3 ; mkdir build ; cd build ; cmake .. ; cmake --build . --config Release ; cmake --install .
@@ -85,7 +87,7 @@ jobs:
 
         - name: Prepare CMake
           working-directory: ${{runner.workspace}}/build
-          run: cmake -DCOPY_MSVC_REDISTRIBUTABLES=ON "$Env:GITHUB_WORKSPACE" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DOPT_BUILD_BLADERF_SOURCE=ON -DOPT_BUILD_LIMESDR_SOURCE=ON -DOPT_BUILD_PERSEUS_SOURCE=ON -DOPT_BUILD_SDRPLAY_SOURCE=ON -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON -DOPT_BUILD_M17_DECODER=ON -DOPT_BUILD_RFNM_SOURCE=ON -DOPT_BUILD_FOBOSSDR_SOURCE=ON -DOPT_BUILD_HYDRASDR_SOURCE=ON -DOPT_BUILD_CH_EXTRAVHF_DECODER=ON -DOPT_BUILD_SOAPY_SOURCE=ON -DOPT_BUILD_MPEG_ADTS_SINK=OFF
+          run: cmake -DCOPY_MSVC_REDISTRIBUTABLES=ON "$Env:GITHUB_WORKSPACE" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DOPT_BUILD_BLADERF_SOURCE=ON -DOPT_BUILD_LIMESDR_SOURCE=ON -DOPT_BUILD_PERSEUS_SOURCE=ON -DOPT_BUILD_SDRPLAY_SOURCE=ON -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON -DOPT_BUILD_M17_DECODER=ON -DOPT_BUILD_RFNM_SOURCE=ON -DOPT_BUILD_FOBOSSDR_SOURCE=ON -DOPT_BUILD_HYDRASDR_SOURCE=ON -DOPT_BUILD_CH_EXTRAVHF_DECODER=ON -DOPT_BUILD_SOAPY_SOURCE=ON -DOPT_BUILD_MPEG_ADTS_SINK=OFF -DOPT_BUILD_ICOM_CIV_CLIENT=true
 
         - name: Build
           working-directory: ${{runner.workspace}}/build
@@ -110,12 +112,14 @@ jobs:
 
       steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Build Environment
           run: cmake -E make_directory ${{runner.workspace}}/build
 
         - name: Install dependencies
-          run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install pkg-config libusb fftw glfw airspy airspyhf portaudio hackrf libbladerf codec2 zstd autoconf automake libtool spdlog && pip3 install mako --break-system-packages
+          run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install pkg-config libusb fftw glfw airspy airspyhf portaudio hackrf libbladerf codec2 zstd autoconf automake libtool spdlog boost && pip3 install mako --break-system-packages
 
         - name: Install volk
           run: git clone --recursive https://github.com/gnuradio/volk && cd volk && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install && cd ../../
@@ -152,7 +156,7 @@ jobs:
 #
         - name: Prepare CMake
           working-directory: ${{runner.workspace}}/build
-          run: cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 $GITHUB_WORKSPACE -DOPT_BUILD_PLUTOSDR_SOURCE=ON -DOPT_BUILD_BLADERF_SOURCE=ON -DOPT_BUILD_SDRPLAY_SOURCE=ON -DOPT_BUILD_LIMESDR_SOURCE=ON -DOPT_BUILD_AUDIO_SINK=OFF -DOPT_BUILD_PORTAUDIO_SINK=ON -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON -DOPT_BUILD_M17_DECODER=ON -DOPT_BUILD_PERSEUS_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DUSE_BUNDLE_DEFAULTS=ON -DOPT_BUILD_RFNM_SOURCE=ON -DOPT_BUILD_FOBOSSDR_SOURCE=ON -DOPT_BUILD_DRAGONLABS_SOURCE=ON -DOPT_BUILD_CH_EXTRAVHF_DECODER=ON -DCMAKE_BUILD_TYPE=Release
+          run: cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 $GITHUB_WORKSPACE -DOPT_BUILD_PLUTOSDR_SOURCE=ON -DOPT_BUILD_BLADERF_SOURCE=ON -DOPT_BUILD_SDRPLAY_SOURCE=ON -DOPT_BUILD_LIMESDR_SOURCE=ON -DOPT_BUILD_AUDIO_SINK=OFF -DOPT_BUILD_PORTAUDIO_SINK=ON -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON -DOPT_BUILD_M17_DECODER=ON -DOPT_BUILD_PERSEUS_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DUSE_BUNDLE_DEFAULTS=ON -DOPT_BUILD_RFNM_SOURCE=ON -DOPT_BUILD_FOBOSSDR_SOURCE=ON -DOPT_BUILD_DRAGONLABS_SOURCE=ON -DOPT_BUILD_CH_EXTRAVHF_DECODER=ON -DOPT_BUILD_ICOM_CIV_CLIENT=true -DCMAKE_BUILD_TYPE=Release
 
         - name: Build
           working-directory: ${{runner.workspace}}/build
@@ -172,80 +176,13 @@ jobs:
           run: gh release upload rolling ${{runner.workspace}}/sdrpp_macos_intel.zip -R ${{github.repository}} --clobber
 
 
-
-    build_macos_arm:
-        runs-on: macos-15
-
-        steps:
-        - uses: actions/checkout@v4
-        
-        - name: Create Build Environment
-          run: cmake -E make_directory ${{runner.workspace}}/build
-
-        - name: Install dependencies
-          run: brew install pkg-config libusb fftw glfw airspy airspyhf portaudio hackrf libbladerf codec2 zstd autoconf automake libtool spdlog && pip3 install mako --break-system-packages
-
-        - name: Install volk
-          run: git clone --recursive https://github.com/gnuradio/volk && cd volk && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install && cd ../../
-
-        - name: Install SDRplay API
-          run: wget https://www.sdrplay.com/software/SDRplayAPI-macos-installer-universal-3.15.0.pkg && sudo installer -pkg SDRplayAPI-macos-installer-universal-3.15.0.pkg -target /
-
-        - name: Install libiio
-          run: wget https://github.com/analogdevicesinc/libiio/archive/refs/tags/v0.25.zip && 7z x v0.25.zip && cd libiio-0.25 && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install && cd ../../
-
-        - name: Install libad9361
-          run: git clone https://github.com/analogdevicesinc/libad9361-iio && cd libad9361-iio && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make -j3 && sudo make install && cd ../../
-
-        - name: Install LimeSuite
-          run: git clone https://github.com/myriadrf/LimeSuite && cd LimeSuite && mkdir builddir && cd builddir && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install && cd ../../
-
-        # - name: Install libperseus
-        #   run: git clone https://github.com/Microtelecom/libperseus-sdr && cd libperseus-sdr && autoreconf -i && ./configure --prefix=/usr/local && make && make install && cd ..
-
-        - name: Install librfnm
-          run: git clone https://github.com/AlexandreRouma/librfnm && cd librfnm && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make && sudo make install && cd ..
-
-        - name: Install libfobos
-          run: git clone https://github.com/AlexandreRouma/libfobos && cd libfobos && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make && sudo make install && cd ..
-
-        - name: Install more recent librtlsdr
-          run: git clone https://github.com/osmocom/rtl-sdr && cd rtl-sdr && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 LIBRARY_PATH=$(pkg-config --libs-only-L libusb-1.0 | sed 's/\-L//') && sudo make install && cd ../../
-
-        - name: Install libhydrasdr
-          run: git clone https://github.com/hydrasdr/rfone_host && cd rfone_host && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_BUILD_TYPE=Release .. && make -j3 && sudo make install && cd ../../
-
-        - name: Install libdlcr
-          run: wget https://dragnlabs.com/host-tools/dlcr_host_v0.3.0.zip && mkdir dlcr_host && cd dlcr_host && 7z x ../dlcr_host_v0.3.0.zip && mkdir build && cd build && cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 .. -DCMAKE_BUILD_TYPE=Release && make -j2 && sudo make install && cd ../../
-
-        - name: Prepare CMake
-          working-directory: ${{runner.workspace}}/build
-          run: cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 $GITHUB_WORKSPACE -DOPT_BUILD_PLUTOSDR_SOURCE=ON -DOPT_BUILD_BLADERF_SOURCE=ON -DOPT_BUILD_SDRPLAY_SOURCE=ON -DOPT_BUILD_LIMESDR_SOURCE=ON -DOPT_BUILD_AUDIO_SINK=OFF -DOPT_BUILD_PORTAUDIO_SINK=ON -DOPT_BUILD_NEW_PORTAUDIO_SINK=ON -DOPT_BUILD_M17_DECODER=OFF -DOPT_BUILD_PERSEUS_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_RFNM_SOURCE=ON -DOPT_BUILD_FOBOSSDR_SOURCE=ON -DOPT_BUILD_HYDRASDR_SOURCE=ON -DOPT_BUILD_DRAGONLABS_SOURCE=ON -DUSE_BUNDLE_DEFAULTS=ON -DCMAKE_BUILD_TYPE=Release -DOPT_BUILD_CH_EXTRAVHF_DECODER=ON
-
-        - name: Build
-          working-directory: ${{runner.workspace}}/build
-          run: make VERBOSE=1 -j3
-
-        - name: Create Archive
-          working-directory: ${{runner.workspace}}
-          run: cd $GITHUB_WORKSPACE && sh make_macos_bundle.sh ${{runner.workspace}}/build ./SDR++Brown.app && zip -r ${{runner.workspace}}/sdrpp_macos_arm.zip SDR++Brown.app
-
-        - name: Save Archive
-          uses: actions/upload-artifact@v4
-          with:
-            name: sdrpp_macos_arm
-            path: ${{runner.workspace}}/sdrpp_macos_arm.zip
-
-        - name: Update Nightly
-          run: gh release upload rolling ${{runner.workspace}}/sdrpp_macos_arm.zip -R ${{github.repository}} --clobber
-
-
-
     build_debian_bullseye_amd64:
         runs-on: ubuntu-latest
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_bullseye && docker build . --tag sdrpp_build
@@ -272,6 +209,9 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
+
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_bookworm && docker build . --tag sdrpp_build
 
@@ -296,6 +236,8 @@ jobs:
 
       steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_jammy && docker build . --tag sdrpp_build
@@ -321,6 +263,8 @@ jobs:
 
       steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_jammy && docker build . --tag sdrpp_build
@@ -346,6 +290,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_trixie && docker build . --tag sdrpp_build
@@ -371,6 +317,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_trixie && docker build . --tag sdrpp_build
@@ -396,6 +344,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_sid && docker build . --tag sdrpp_build
@@ -421,6 +371,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_sid && docker build . --tag sdrpp_build
@@ -446,6 +398,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_focal && docker build . --tag sdrpp_build
@@ -471,6 +425,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_focal && docker build . --tag sdrpp_build
@@ -496,6 +452,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_noble && docker build . --tag sdrpp_build
@@ -520,6 +478,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_noble && docker build . --tag sdrpp_build
@@ -545,6 +505,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Fetch container
           working-directory: ${{runner.workspace}}
@@ -576,6 +538,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Install codespell
           run: sudo apt update -y && sudo apt install -y codespell
@@ -588,6 +552,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Run check_clang_format
           run: cd $GITHUB_WORKSPACE && chmod +x ./check_clang_format.sh && ./check_clang_format.sh || true
