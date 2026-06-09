@@ -112,6 +112,8 @@ jobs:
 
       steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Build Environment
           run: cmake -E make_directory ${{runner.workspace}}/build
@@ -180,6 +182,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Build Environment
           run: cmake -E make_directory ${{runner.workspace}}/build
@@ -248,6 +252,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_bullseye && docker build . --tag sdrpp_build
@@ -274,6 +280,9 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
+
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_bookworm && docker build . --tag sdrpp_build
 
@@ -298,6 +307,8 @@ jobs:
 
       steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_jammy && docker build . --tag sdrpp_build
@@ -323,6 +334,8 @@ jobs:
 
       steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_jammy && docker build . --tag sdrpp_build
@@ -348,6 +361,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_trixie && docker build . --tag sdrpp_build
@@ -373,6 +388,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_trixie && docker build . --tag sdrpp_build
@@ -398,6 +415,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_sid && docker build . --tag sdrpp_build
@@ -423,6 +442,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/debian_sid && docker build . --tag sdrpp_build
@@ -448,6 +469,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_focal && docker build . --tag sdrpp_build
@@ -473,6 +496,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
         
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_focal && docker build . --tag sdrpp_build
@@ -498,6 +523,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_noble && docker build . --tag sdrpp_build
@@ -522,6 +549,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Create Docker Image
           run: cd $GITHUB_WORKSPACE/docker_builds/ubuntu_noble && docker build . --tag sdrpp_build
@@ -547,6 +576,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Fetch container
           working-directory: ${{runner.workspace}}
@@ -578,6 +609,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Install codespell
           run: sudo apt update -y && sudo apt install -y codespell
@@ -590,6 +623,8 @@ jobs:
 
         steps:
         - uses: actions/checkout@v4
+          with:
+              submodules: 'recursive'
 
         - name: Run check_clang_format
           run: cd $GITHUB_WORKSPACE && chmod +x ./check_clang_format.sh && ./check_clang_format.sh || true
