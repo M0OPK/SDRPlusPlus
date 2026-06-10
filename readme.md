@@ -1,5 +1,52 @@
-# SDR++Brown (fork), is not the original bloat-free SDR software
+# SDR++Brown Icom Panadapter Edition (fork), is not the original bloat-free SDR software
 
+This is a fork of the SDR++Brown version of SDR++. So, a fork of a fork. Features added to this fork are as follows (and will be updated here)
+
+## SDRPlay PPM support
+
+The SDRPlay source has been missing this feature since the source was created. This has been added and is a hardware PPM setting. That is the value is sent to the SDRPlay API and the device implements it.
+
+Changes to SmGui to support float entry (required for PPM entry)
+
+## RigCtld client changes
+
+This client now has support to specify offsets for the modes AM/FM/LSB/USB/CW. Some radios shift their IF window to ensure that the signal sits in the middle of the filtered area. As such the SDR needs to shift ensure the centre frequency remains where it was, when the mode is changed.
+
+Mode changes in SDR++ are now propagated to the radio.
+
+Implemented a two way sync mode. The poll time can be specified, however there is a limit of how often rigctld will attempt to poll the radio. There are some crashes when rigctl gets interfered with (if icom transceive mode is enabled for example and the dial is switched fast). I've worked on some of these, but there still a few cases that can crash it.
+
+Changes to underlying rigctl library to support these changes
+
+## Icom CIV Client (new module)
+
+This new module is based on the rigctld client module. It's designed to work with most Icom radios providing the following features.
+
+Configuration screen for serial port, baud rate, CIV address, Panadapter mode toggle, Panadapter IF and the same offsets that were added to rigctld.
+
+Real time handling of changes from the radio (requires Transceive mode to be on). That is, as you turn the dial or change mode the change is reflected immediately in SDR++.
+
+Propagate changes from SDR++ to frequency and mode to the radio.
+
+Only commands for frequency/mode change are used and only transceive commands accepted. This should provide a wide range of compatibility.
+
+Tested on Icom 7100.
+
+## Dependencies
+
+The serial library (https://github.com/bgeiser/async_comm forked from https://github.com/dpkoch/async_comm) requires boost installed to compile.
+
+Ubuntu/Debian: apt install libboost-all-dev
+
+Arch (yay): yay -Sy boost
+
+Windows (minimal): vcpkg install boost-asio boost-bind boost-function
+
+Windows (full and slow): vcpkg install boost
+
+Macos: brew install boost
+
+# Original readme from sdr++ brown
 
 [Changelog](changelog.md)
 
