@@ -119,6 +119,7 @@ cp $build_dir/misc_modules/rigctl_server/$RELDIR/rigctl_server.dll sdrpp_windows
 cp $build_dir/misc_modules/scanner/$RELDIR/scanner.dll sdrpp_windows_x64/modules/
 
 cp $build_dir/misc_modules/icom_civ_client/$RELDIR/icom_civ_client.dll sdrpp_windows_x64/modules/
+cp $build_dir/misc_modules/yaesu_cat_client/$RELDIR/yaesu_cat_client.dll sdrpp_windows_x64/modules/
 
 # Copy supporting libs
 cp 'C:/Program Files/PothosSDR/bin/libusb-1.0.dll' sdrpp_windows_x64/
