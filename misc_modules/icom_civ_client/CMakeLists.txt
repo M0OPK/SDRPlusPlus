@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 project(icom_civ_client)
 
-add_subdirectory(lib/async_comm)
 file(GLOB SRC "src/*.cpp")
 
 include(${SDRPP_MODULE_CMAKE})

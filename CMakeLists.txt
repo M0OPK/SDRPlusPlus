@@ -88,6 +88,7 @@ option(OPT_BUILD_SCANNER "Frequency scanner" ON)
 option(OPT_BUILD_SCHEDULER "Build the scheduler" OFF)
 option(OPT_BUILD_NOISE_REDUCTION_LOGMMSE "Build LOGMMSE noise reduction" ON)
 option(OPT_BUILD_ICOM_CIV_CLIENT "Build Icom CIV client for two way sync with ICOM radios using Transceive mode" OFF)
+option(OPT_BUILD_YAESU_CAT_CLIENT "Build Yaesu CAT client for two way sync with Yaesu radios using Auto Info mode" OFF)
 
 # Other options
 option(USE_INTERNAL_LIBCORRECT "Use an internal version of libcorrect" ON)
@@ -433,9 +434,17 @@ if (OPT_BUILD_NOISE_REDUCTION_LOGMMSE)
 add_subdirectory("misc_modules/noise_reduction_logmmse")
 endif (OPT_BUILD_NOISE_REDUCTION_LOGMMSE)
 
+if (OPT_BUILD_ICOM_CIV_CLIENT OR OPT_BUILD_YAESU_CAT_CLIENT)
+add_subdirectory(core/async_comm)
+endif (OPT_BUILD_ICOM_CIV_CLIENT OR OPT_BUILD_YAESU_CAT_CLIENT)
+
 if (OPT_BUILD_ICOM_CIV_CLIENT)
 add_subdirectory("misc_modules/icom_civ_client")
 endif (OPT_BUILD_ICOM_CIV_CLIENT)
+
+if (OPT_BUILD_YAESU_CAT_CLIENT)
+add_subdirectory("misc_modules/yaesu_cat_client")
+endif (OPT_BUILD_YAESU_CAT_CLIENT)
 
 
 set(SDRPP_SOURCES "src/main.cpp")
