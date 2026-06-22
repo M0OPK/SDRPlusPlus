@@ -15,7 +15,6 @@
 #include <module.h>
 #include <gui/gui.h>
 #include <gui/style.h>
-#include <sdrplay_api.h>
 #include <signal_path/signal_path.h>
 #include <core.h>
 #include <config.h>
