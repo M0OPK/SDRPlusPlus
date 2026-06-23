@@ -20,7 +20,9 @@
 #include <config.h>
 #include <radio_module.h>
 #include <string>
+#include <unistd.h>
 #include <vector>
+#include <chrono>
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
 
 SDRPP_MOD_INFO{
@@ -35,7 +37,7 @@ ConfigManager config;
 
 class YaesuCatClientModule : public ModuleManager::Instance {
 
-const char * CAT_ALLOWED_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;\0";
+const long SERIAL_TIMEOUT_MS = 100;
 
 enum YaesuMode
 {    
@@ -183,7 +185,10 @@ public:
         
         // Set radio to initial AI mode
         if (initial_ai_state == YaesuAiMode::MODE_OFF)
+        {
             yaesu_set_aimode(false);
+            usleep(100000);     // Just sleep long enough to send the command before disconnect
+        }
 
         // Switch source back to normal mode
         sigpath::sourceManager.onRetune.unbindHandler(&_retuneHandler);
@@ -216,7 +221,7 @@ public:
             return yaesu_send_command("AI0;", 5);
     }
 
-    bool yaesu_send_command(const char* command, int maxlen = 10)
+    bool yaesu_send_command(const char* command, int maxlen = 13)
     {
         if (serial == nullptr)
         {
@@ -251,24 +256,6 @@ public:
         sprintf(command, "FA%09d;", freqHz);
         yaesu_send_command(command);
         return true;
-
-        // Construct template radio tune command
-        // @ToDo: Yaesu version
-        /*uint8_t command[11] = { 0xfe, 0xfe, civ_address, CIV_CONTROLLER_ADDRESS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfd };
-
-        // Here we encode the frequency into BCD and place it into the command array
-        for(int currentByte = 5; currentByte < 10; currentByte++)
-        {
-            uint8_t byteValue = freqHz % 10;
-            freqHz /= 10;
-            byteValue += (freqHz % 10) * 0x10;
-            freqHz /= 10;
-            command[currentByte] = byteValue;
-        }
-
-        serial->send_bytes(command, 11);
-        lastFreq = freq;
-        return true;*/
     }
 
     YaesuMode yaesu_setmode(DemodID mode)
@@ -309,7 +296,7 @@ public:
             case RADIO_DEMOD_USB:
                 yaesu_mode = MODE_USB;
                 break;
-            case RADIO_DEMOD_WFM:
+            case RADIO_DEMOD_WFM:       // Decide whether to keep this or go with invalid
                 yaesu_mode = MODE_FM;
                 break;
             default:
@@ -319,42 +306,37 @@ public:
         return yaesu_mode;
     }
 
-    bool valid_char(char input)
-    {
-        const char * valid_ptr = CAT_ALLOWED_CHARACTERS;
-        int valid_len = strlen(CAT_ALLOWED_CHARACTERS);
-        int position = 1;
-        while (*valid_ptr != '\0' && position <= valid_len)
-        {
-            if(input == *valid_ptr)
-                return true;
-        }
-        return false;
-    }
-
     void cat_callback(const uint8_t* buf, size_t len)
     {
-        // @ToDo: Totally change this to handle Yaesu Auto Info commands
+        // If we have data in the buffer and more than 100ms passed since last serial comms, clear the buffer for a fresh start
+        std::chrono::steady_clock::time_point time_now = std::chrono::steady_clock::now();
+        long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - last_serial).count();
+        if (!serial_buffer.empty() > 0 && elapsed > SERIAL_TIMEOUT_MS)
+        {
+            flog::info("Serial timeout, clearing buffer of {0} bytes", serial_buffer.size());
+            serial_buffer.clear();
+        }
+
+        // Reset timeout timer
+        last_serial = std::chrono::steady_clock::now();
+
         // Add the waiting data to the buffer
         for (size_t buffer_loc = 0; buffer_loc < len; buffer_loc++)
         {
-            if (valid_char(buf[buffer_loc]))
-                serial_buffer.push_back(buf[buffer_loc]);
+            serial_buffer.push_back(buf[buffer_loc]);
         }
 
         // If we have nothing left, nothing for now
         if (serial_buffer.size() < 3)
             return;
 
-        // See if we have an ending
+        // See if we have a command ending
         if (std::find(serial_buffer.begin(), serial_buffer.end(), ';') == serial_buffer.end())
             return;
 
         // Construct the command and remove bytes from buffer
-        //std::vector<char> cat_command;
         std::string cat_command = "";
 
-        bool preamble = true;
         // Take just the actual command data
         while(serial_buffer[0] != ';')
         {
@@ -393,7 +375,7 @@ public:
             }
             else 
             {
-                flog::error("AI result received with invalid state %s", ai_state);
+                flog::error("AI result received with invalid state {0}", ai_state);
             }
         }
         // Handle general info message (contains frequency and mode)
@@ -422,11 +404,6 @@ public:
             int modeId = 0;
             std::sscanf(modeId_hex.c_str(), "%X", &modeId);
             mode = (YaesuMode)modeId;
-        }
-        // Otherwise log the command info
-        else 
-        {
-            flog::warn("Unknown command with length %d = %s", cat_command.length(), cat_command);
         }
 
         // If frequency changed, set in sdr
@@ -487,12 +464,16 @@ public:
         double mode_offset = 0.0l;
         switch (mode)
         {
+            case MODE_AM:
             case MODE_AMN:
                 mode_offset = (double)this->am_offset;
                 break;
+            case MODE_FM:
             case MODE_FMN:
+            case MODE_DATAFM:
                 mode_offset = (double)this->fm_offset;
                 break;
+            case MODE_CWU:
             case MODE_CWL:
                 mode_offset = (double)this->cw_offset;
                 break;
@@ -585,6 +566,7 @@ private:
                 bool currentOffsetChanged = false;
                 switch (_this->lastMode) {
                     case MODE_AMN:
+                    case MODE_AM:
                         if (_this->am_offset != _this->_am_offset)
                             currentOffsetChanged = true;
                         break;
@@ -594,6 +576,8 @@ private:
                             currentOffsetChanged = true;
                         break;
                     case MODE_FMN:
+                    case MODE_FM:
+                    case MODE_DATAFMN:
                         if (_this->fm_offset != _this->_fm_offset)
                             currentOffsetChanged = true;
                         break;
@@ -726,11 +710,9 @@ private:
 
 
     static void retuneHandler(double freq, void* ctx) {
-        flog::info("Retune handler fired");
         YaesuCatClientModule* _this = (YaesuCatClientModule*)ctx;
         if (!_this->serial) { return; }
         if (_this->suppressEvents || freq == _this->lastFreq) { return; }
-        flog::info("Tuning to {0}", freq);
         if (!_this->yaesu_tune(freq)) {
             flog::error("Could not set frequency");
         }
@@ -775,6 +757,7 @@ private:
 
     EventHandler<double> _retuneHandler;
     EventHandler<DemodID> _modChangeHandler;
+    std::chrono::steady_clock::time_point last_serial = std::chrono::steady_clock::now();
 
     std::shared_ptr<async_comm::Serial> serial = nullptr;
 };
