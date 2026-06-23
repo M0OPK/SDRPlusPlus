@@ -98,7 +98,7 @@ public:
         }
 
         // Always copy civ address to the text field. Even if it is the default
-        sprintf(civ_address_txt, "%02X", civ_address);
+        snprintf(civ_address_txt, 3, "%02X", civ_address);
 
         config.release();
 

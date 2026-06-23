@@ -253,7 +253,7 @@ public:
 
         int freqHz = (int)freq;
         char command[13];
-        sprintf(command, "FA%09d;", freqHz);
+        snprintf(command, 13, "FA%09d;", freqHz);
         yaesu_send_command(command);
         return true;
     }
@@ -270,8 +270,8 @@ public:
         int mode_set = (int)yaesu_mode;
         assert(mode_set <= 0xf);
 
-        char command[5];
-        sprintf(command, "MD%X;", mode_set);
+        char command[6];
+        snprintf(command, 6, "MD0%X;", mode_set);
         yaesu_send_command(command);
         return yaesu_mode;
     }
@@ -330,130 +330,130 @@ public:
         if (serial_buffer.size() < 3)
             return;
 
-        // See if we have a command ending
-        if (std::find(serial_buffer.begin(), serial_buffer.end(), ';') == serial_buffer.end())
-            return;
-
-        // Construct the command and remove bytes from buffer
-        std::string cat_command = "";
-
-        // Take just the actual command data
-        while(serial_buffer[0] != ';')
+        // Keep processing commands in buffer until there are no more
+        while (std::find(serial_buffer.begin(), serial_buffer.end(), ';') != serial_buffer.end())
         {
-            cat_command.push_back(serial_buffer[0]);
+            // Construct the command and remove bytes from buffer
+            std::string cat_command = "";
+
+            // Take just the actual command data
+            while(serial_buffer[0] != ';')
+            {
+                cat_command.push_back(serial_buffer[0]);
+                serial_buffer.erase(serial_buffer.begin());
+            }
+
+            // Remove final byte (will be semicolon)
             serial_buffer.erase(serial_buffer.begin());
-        }
 
-        // Remove final byte (will be semicolon)
-        serial_buffer.erase(serial_buffer.begin());
+            // Make sure we have a useful command
+            if (cat_command.length() < 2)
+                return;
 
-        // Make sure we have a useful command
-        if (cat_command.length() < 2)
-            return;
+            // Get command prefix (first two characters)
+            std::string prefix = cat_command.substr(0, 2);
 
-        // Get command prefix (first two characters)
-        std::string prefix = cat_command.substr(0, 2);
+            // Set mode to invalid. If we set it later, we'll send to SDR++
+            YaesuMode mode = YaesuMode::MODE_INVALID;
 
-        // Set mode to invalid. If we set it later, we'll send to SDR++
-        YaesuMode mode = YaesuMode::MODE_INVALID;
+            // Set frequency to last frequency, so we know if it changes
+            int freqHz = (int)lastFreq;
 
-        // Set frequency to last frequency, so we know if it changes
-        int freqHz = (int)lastFreq;
-
-        // Handle AI command result
-        if (prefix == "AI" && cat_command.length() == 3)
-        {
-            char ai_state = *cat_command.substr(2, 1).c_str();
-            if (ai_state == '0')
+            // Handle AI command result
+            if (prefix == "AI" && cat_command.length() == 3)
             {
-                initial_ai_state = YaesuAiMode::MODE_OFF;
-                yaesu_set_aimode(true);
-            }
-            else if (ai_state == '1')
-            {
-                initial_ai_state = YaesuAiMode::MODE_ON;
-            }
-            else 
-            {
-                flog::error("AI result received with invalid state {0}", ai_state);
-            }
-        }
-        // Handle general info message (contains frequency and mode)
-        else if (prefix == "IF" && cat_command.length() == 27)
-        {
-            // Extract frequency and mode only
-            std::string freqHzStr = cat_command.substr(5, 9);
-            std::string modeId_hex = cat_command.substr(21,1);
-            freqHz = std::stoi(freqHzStr);
-            int modeId = 0;
-            std::sscanf(modeId_hex.c_str(), "%X", &modeId);
-            mode = (YaesuMode)modeId;
-        }
-        // Handle frequency change
-        else if (prefix == "FA" && cat_command.length() == 11)
-        {
-            // Extract frequency
-            std::string freqHzStr = cat_command.substr(2, 9);
-            freqHz = std::stoi(freqHzStr);            
-        }
-        // Handle mode change
-        else if (prefix == "MD" && cat_command.length() == 4)
-        {
-            // Extract mode
-            std::string modeId_hex = cat_command.substr(3,1);
-            int modeId = 0;
-            std::sscanf(modeId_hex.c_str(), "%X", &modeId);
-            mode = (YaesuMode)modeId;
-        }
-
-        // If frequency changed, set in sdr
-        if (freqHz != 0 && freqHz != (int)lastFreq)
-        {
-            suppressEvents = true;
-            lastFreq = (double)freqHz;
-            tuner::tune(tuner::TUNER_MODE_CENTER, gui::waterfall.selectedVFO, lastFreq);
-            suppressEvents = false;
-        }
-
-        // If mode changed, set it in sdr
-        if (mode != YaesuMode::MODE_INVALID)
-        {
-            DemodID modId = DemodID::_RADIO_DEMOD_COUNT;
-            switch (mode) 
-            {
-                case YaesuMode::MODE_AM:
-                case YaesuMode::MODE_AMN:
-                    modId = RADIO_DEMOD_AM;
-                    break;
-                case YaesuMode::MODE_CWL:
-                case YaesuMode::MODE_CWU:
-                    modId = RADIO_DEMOD_CW;
-                    break;
-                case YaesuMode::MODE_FM:
-                case YaesuMode::MODE_FMN:
-                    modId = RADIO_DEMOD_NFM;
-                    break;
-                case YaesuMode::MODE_LSB:
-                    modId = RADIO_DEMOD_LSB;
-                    break;
-                case YaesuMode::MODE_USB:
-                    modId = RADIO_DEMOD_USB;
-                    break;
-                default:
-                    modId = DemodID::_RADIO_DEMOD_COUNT;
-                    break;
-            }
-
-            // If mode is valid and changed, send to SDR to change 
-            if (modId != _RADIO_DEMOD_COUNT && mode != lastMode)
-            {
-                if (RadioModule * radioMod = (RadioModule *)core::moduleManager.getInterface("", "RadioModule"))
+                char ai_state = *cat_command.substr(2, 1).c_str();
+                if (ai_state == '0')
                 {
-                    suppressEvents = true;
-                    lastMode = mode;
-                    radioMod->selectDemodByID(modId);
-                    this->setModeOffset(mode);
-                    suppressEvents = false;
+                    initial_ai_state = YaesuAiMode::MODE_OFF;
+                    yaesu_set_aimode(true);
+                }
+                else if (ai_state == '1')
+                {
+                    initial_ai_state = YaesuAiMode::MODE_ON;
+                }
+                else
+                {
+                    flog::error("AI result received with invalid state {0}", ai_state);
+                }
+            }
+            // Handle general info message (contains frequency and mode)
+            else if (prefix == "IF" && cat_command.length() == 27)
+            {
+                // Extract frequency and mode only
+                std::string freqHzStr = cat_command.substr(5, 9);
+                std::string modeId_hex = cat_command.substr(21,1);
+                freqHz = std::stoi(freqHzStr);
+                int modeId = 0;
+                std::sscanf(modeId_hex.c_str(), "%X", &modeId);
+                mode = (YaesuMode)modeId;
+            }
+            // Handle frequency change
+            else if (prefix == "FA" && cat_command.length() == 11)
+            {
+                // Extract frequency
+                std::string freqHzStr = cat_command.substr(2, 9);
+                freqHz = std::stoi(freqHzStr);
+            }
+            // Handle mode change
+            else if (prefix == "MD" && cat_command.length() == 4)
+            {
+                // Extract mode
+                std::string modeId_hex = cat_command.substr(3,1);
+                int modeId = 0;
+                std::sscanf(modeId_hex.c_str(), "%X", &modeId);
+                mode = (YaesuMode)modeId;
+            }
+
+            // If frequency changed, set in sdr
+            if (freqHz != 0 && freqHz != (int)lastFreq)
+            {
+                suppressEvents = true;
+                lastFreq = (double)freqHz;
+                tuner::tune(tuner::TUNER_MODE_CENTER, gui::waterfall.selectedVFO, lastFreq);
+                suppressEvents = false;
+            }
+
+            // If mode changed, set it in sdr
+            if (mode != YaesuMode::MODE_INVALID)
+            {
+                DemodID modId = DemodID::_RADIO_DEMOD_COUNT;
+                switch (mode)
+                {
+                    case YaesuMode::MODE_AM:
+                    case YaesuMode::MODE_AMN:
+                        modId = RADIO_DEMOD_AM;
+                        break;
+                    case YaesuMode::MODE_CWL:
+                    case YaesuMode::MODE_CWU:
+                        modId = RADIO_DEMOD_CW;
+                        break;
+                    case YaesuMode::MODE_FM:
+                    case YaesuMode::MODE_FMN:
+                        modId = RADIO_DEMOD_NFM;
+                        break;
+                    case YaesuMode::MODE_LSB:
+                        modId = RADIO_DEMOD_LSB;
+                        break;
+                    case YaesuMode::MODE_USB:
+                        modId = RADIO_DEMOD_USB;
+                        break;
+                    default:
+                        modId = DemodID::_RADIO_DEMOD_COUNT;
+                        break;
+                }
+
+                // If mode is valid and changed, send to SDR to change
+                if (modId != _RADIO_DEMOD_COUNT && mode != lastMode)
+                {
+                    if (RadioModule * radioMod = (RadioModule *)core::moduleManager.getInterface("", "RadioModule"))
+                    {
+                        suppressEvents = true;
+                        lastMode = mode;
+                        radioMod->selectDemodByID(modId);
+                        this->setModeOffset(mode);
+                        suppressEvents = false;
+                    }
                 }
             }
         }
