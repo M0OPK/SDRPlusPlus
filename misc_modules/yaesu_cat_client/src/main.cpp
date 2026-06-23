@@ -20,7 +20,7 @@
 #include <config.h>
 #include <radio_module.h>
 #include <string>
-#include <unistd.h>
+#include <thread>
 #include <vector>
 #include <chrono>
 #define CONCAT(a, b) ((std::string(a) + b).c_str())
@@ -187,7 +187,7 @@ public:
         if (initial_ai_state == YaesuAiMode::MODE_OFF)
         {
             yaesu_set_aimode(false);
-            usleep(100000);     // Just sleep long enough to send the command before disconnect
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));    // Sleep for 100ms just to clear buffer
         }
 
         // Switch source back to normal mode
@@ -313,7 +313,7 @@ public:
         long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - last_serial).count();
         if (!serial_buffer.empty() > 0 && elapsed > SERIAL_TIMEOUT_MS)
         {
-            flog::info("Serial timeout, clearing buffer of {0} bytes", serial_buffer.size());
+            flog::info("Serial timeout, clearing buffer of {} bytes", (int64_t)serial_buffer.size());
             serial_buffer.clear();
         }
 
