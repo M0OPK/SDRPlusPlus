@@ -43,18 +43,18 @@ enum YaesuMode
 {    
     MODE_LSB = 0x01,
     MODE_USB,
-    MODE_CWU,
+    MODE_CW,
     MODE_FM,
     MODE_AM,
     MODE_RTTYL,
-    MODE_CWL,
+    MODE_CWR,
     MODE_DATAL,
     MODE_RTTYU,
     MODE_DATAFM,
     MODE_FMN,
     MODE_DATAU,
     MODE_AMN,
-    MODE_PSK,
+    MODE_C4FM_PSK,
     MODE_DATAFMN,
     MODE_INVALID = 0xff
 };
@@ -282,7 +282,7 @@ public:
         switch (mode) 
         {
             case RADIO_DEMOD_CW:
-                yaesu_mode = MODE_CWL;
+                yaesu_mode = MODE_CWR;
                 break;
             case RADIO_DEMOD_AM:
                 yaesu_mode = MODE_AMN;
@@ -424,8 +424,8 @@ public:
                     case YaesuMode::MODE_AMN:
                         modId = RADIO_DEMOD_AM;
                         break;
-                    case YaesuMode::MODE_CWL:
-                    case YaesuMode::MODE_CWU:
+                    case YaesuMode::MODE_CWR:
+                    case YaesuMode::MODE_CW:
                         modId = RADIO_DEMOD_CW;
                         break;
                     case YaesuMode::MODE_FM:
@@ -473,8 +473,8 @@ public:
             case MODE_DATAFM:
                 mode_offset = (double)this->fm_offset;
                 break;
-            case MODE_CWU:
-            case MODE_CWL:
+            case MODE_CW:
+            case MODE_CWR:
                 mode_offset = (double)this->cw_offset;
                 break;
             case MODE_LSB:
@@ -570,8 +570,8 @@ private:
                         if (_this->am_offset != _this->_am_offset)
                             currentOffsetChanged = true;
                         break;
-                    case MODE_CWL:
-                    case MODE_CWU:
+                    case MODE_CWR:
+                    case MODE_CW:
                         if (_this->cw_offset != _this->_cw_offset)
                             currentOffsetChanged = true;
                         break;

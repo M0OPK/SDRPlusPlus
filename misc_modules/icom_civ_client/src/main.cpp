@@ -202,7 +202,7 @@ public:
         int freqHz = (int)freq;
 
         // Construct template radio tune command
-        uint8_t command[11] = { 0xfe, 0xfe, civ_address, CIV_CONTROLLER_ADDRESS, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfd };
+        uint8_t command[11] = { 0xfe, 0xfe, civ_address, CIV_CONTROLLER_ADDRESS, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfd };
 
         // Here we encode the frequency into BCD and place it into the command array
         for(int currentByte = 5; currentByte < 10; currentByte++)
@@ -236,7 +236,7 @@ public:
             return icom_mode;
 
         // Construct/send mode change command
-        uint8_t command[7] = { 0xfe, 0xfe, civ_address, CIV_CONTROLLER_ADDRESS, 0x01, (uint8_t)icom_mode, 0xfd };
+        uint8_t command[7] = { 0xfe, 0xfe, civ_address, CIV_CONTROLLER_ADDRESS, 0x06, (uint8_t)icom_mode, 0xfd };
         serial->send_bytes(command, 7);
         lastMode = icom_mode;
         this->setModeOffset(icom_mode);
