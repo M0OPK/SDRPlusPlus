@@ -202,6 +202,7 @@ public:
         if (serial != nullptr)
         {
             serial->close();
+            serial.reset();
             serial = nullptr;
         }
 

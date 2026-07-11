@@ -45,6 +45,9 @@ public:
             port = config.conf[name]["port"];
             port = std::clamp<int>(port, 1, 65535);
         }
+        if (config.conf[name].contains("useIfTuning")) {
+            useIfTuning = config.conf[name]["useIfTuning"];
+        }
         if (config.conf[name].contains("ifFreq")) {
             ifFreq = config.conf[name]["ifFreq"];
         }
@@ -119,7 +122,8 @@ public:
 
         // Switch source to panadapter mode
         sigpath::sourceManager.setPanadapterIF(ifFreq);
-        sigpath::sourceManager.setTuningMode(SourceManager::TuningMode::PANADAPTER);
+        if (useIfTuning)
+            sigpath::sourceManager.setTuningMode(SourceManager::TuningMode::PANADAPTER);
         sigpath::sourceManager.onRetune.bindHandler(&_retuneHandler);
 
         // Get mode changes
@@ -292,6 +296,29 @@ private:
         }
         if (_this->running) { style::endDisabled(); }
 
+        ImGui::LeftLabel("IF Frequency Panadapter");
+        ImGui::FillWidth();
+        if (ImGui::Checkbox(CONCAT("##_icomciv_use_if_freq_", _this->name), &_this->useIfTuning)) {
+            if (_this->running) {
+                if (_this->useIfTuning)
+                {
+                    sigpath::sourceManager.setTuningMode(SourceManager::TuningMode::PANADAPTER);
+
+                }
+                else
+                {
+                    sigpath::sourceManager.setTuningMode(SourceManager::TuningMode::NORMAL);
+                    sigpath::sourceManager.setTuningOffset(0.0l);
+                }
+            }
+            config.acquire();
+            config.conf[_this->name]["useIfTuning"] = _this->useIfTuning;
+            config.release(true);
+        }
+
+        if (!_this->useIfTuning)
+            ImGui::BeginDisabled();
+
         ImGui::LeftLabel("IF Frequency");
         ImGui::FillWidth();
         if (ImGui::InputDouble(CONCAT("##_rigctl_if_freq_", _this->name), &_this->ifFreq, 100.0, 100000.0, "%.0f")) {
@@ -302,6 +329,8 @@ private:
             config.conf[_this->name]["ifFreq"] = _this->ifFreq;
             config.release(true);
         }
+        if (!_this->useIfTuning)
+            ImGui::EndDisabled();
 
         ImGui::FillWidth();
         if (ImGui::Checkbox(CONCAT("Two Way Sync##_rigctl_sync_twoway_", _this->name), &_this->sync_twoway))
@@ -365,6 +394,8 @@ private:
         }
 
         ImGui::FillWidth();
+        if (!_this->useIfTuning)
+            ImGui::BeginDisabled();
         if (ImGui::Button(CONCAT("Offsets##rigctl_offset_edit_btn", _this->name), ImVec2(menuWidth, 0))) {
             _this->offset_param_edit = true;
             _this->_fm_offset = _this->fm_offset;
@@ -373,6 +404,8 @@ private:
             _this->_lsb_offset = _this->lsb_offset;
             _this->_usb_offset = _this->usb_offset;
         }
+        if (!_this->useIfTuning)
+            ImGui::EndDisabled();
 
         ImGui::FillWidth();
         if (_this->running && ImGui::Button(CONCAT("Stop##_rigctl_cli_stop_", _this->name), ImVec2(menuWidth, 0))) {
@@ -514,6 +547,7 @@ private:
     int port = 4532;
     std::shared_ptr<net::rigctl::Client> client;
 
+    bool useIfTuning = true;
     double ifFreq = 8830000.0;
 
     bool sync_twoway = false;
