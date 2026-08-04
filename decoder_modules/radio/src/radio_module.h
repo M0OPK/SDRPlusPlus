@@ -595,7 +595,7 @@ private:
         selectedDemod->start();
     }
 
-
+public:
     void setBandwidth(double bw) {
         bw = std::clamp<double>(bw, minBandwidth, maxBandwidth);
         bandwidth = bw;
@@ -608,6 +608,7 @@ private:
         config.release(true);
     }
 
+private:
     void setAudioSampleRate(double sr) {
         audioSampleRate = sr;
         if (!selectedDemod) { return; }

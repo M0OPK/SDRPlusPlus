@@ -83,7 +83,7 @@ namespace demod {
         double getAFSampleRate() override { return getIFSampleRate(); }
         double getDefaultBandwidth() override { return 200.0; }
         double getMinBandwidth() override { return 50.0; }
-        double getMaxBandwidth() override { return 500.0; }
+        double getMaxBandwidth() override { return 3600.0; }
         bool getBandwidthLocked() override { return false; }
         double getDefaultSnapInterval() override { return 10.0; }
         int getVFOReference() override { return ImGui::WaterfallVFO::REF_CENTER; }

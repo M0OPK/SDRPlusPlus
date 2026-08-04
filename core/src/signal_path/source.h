@@ -38,6 +38,7 @@ public:
     void setTuningMode(TuningMode mode);
     void setPanadapterIF(double freq);
     void setPanadapterOffset(double offset);
+    double getFrequency();
     const std::string& getSelectedName() const { return selectedName; }
 
     std::vector<std::string> getSourceNames();

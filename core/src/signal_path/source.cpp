@@ -93,6 +93,11 @@ void SourceManager::tune(double freq) {
     onTuneChanged.emit(freq);
 }
 
+double SourceManager::getFrequency()
+{
+    return currentFreq;
+}
+
 void SourceManager::setTuningOffset(double offset) {
     tuneOffset = offset;
     tune(currentFreq);
